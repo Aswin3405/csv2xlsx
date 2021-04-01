@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -92,8 +91,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	xlsxFileName := "report.xlsx"
+	CreateXLSX(xlsxFileName)
+
 	for _, filename := range pflag.Args() {
-		err := ConvertCSV2XLSX(filename)
+		err := ConvertCSV2XLSX(filename, xlsxFileName)
 		if err != nil {
 			fmt.Printf("convert file [%s] error: %v\n", filename, err)
 			os.Exit(1)
@@ -101,7 +103,13 @@ func main() {
 	}
 }
 
-func ConvertCSV2XLSX(filename string) error {
+func CreateXLSX(xlsxFileName string) error {
+	excel := excelize.NewFile()
+	excel.DeleteSheet("Sheet1")
+	return excel.SaveAs(xlsxFileName)
+}
+
+func ConvertCSV2XLSX(filename, xlsxFileName string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -112,8 +120,13 @@ func ConvertCSV2XLSX(filename string) error {
 	if Header == "1" {
 		isHeader = true
 	}
-	excel := excelize.NewFile()
-	sheet := "Sheet1"
+	//excel := excelize.NewFile()
+	excel, err := excelize.OpenFile(xlsxFileName)
+	if err != nil {
+		return err
+	}
+	excel.NewSheet(filename)
+	sheet := filename
 	i := 1
 	for {
 		line, err := r.Read()
@@ -165,8 +178,9 @@ func ConvertCSV2XLSX(filename string) error {
 		}
 		i++
 	}
-	bname := filepath.Base(filename)
-	xlsxFilename := strings.TrimRight(bname, filepath.Ext(bname)) + ".xlsx"
-	savePath := filepath.Join(Output, xlsxFilename)
-	return excel.SaveAs(savePath)
+	//bname := filepath.Base(filename)
+	//xlsxFilename := strings.TrimRight(bname, filepath.Ext(bname)) + ".xlsx"
+	//savePath := filepath.Join(Output, xlsxFilename)
+	//return excel.SaveAs(savePath)
+	return excel.Save()
 }
